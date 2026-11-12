@@ -753,6 +753,40 @@ async fn client_credentials_issues_machine_tokens() {
         format!("client:{}", client.client_id)
     );
 
+    // A token minted for another application must look inactive to this system.
+    let other = create_client(
+        &app,
+        &admin,
+        json!({ "name": "Another System", "allowed_scopes": ["tokens:verify"] }),
+    )
+    .await;
+    let other_key_response = call(
+        &app,
+        Method::POST,
+        &format!("/api/v1/admin/clients/{}/keys", other.id),
+        Some(&admin),
+        Some(json!({ "name": "other-verifier", "scopes": ["tokens:verify"] })),
+    )
+    .await;
+    let other_key = other_key_response.data()["secret"]
+        .as_str()
+        .expect("other key")
+        .to_string();
+    let cross_app = api_key_call(
+        &app,
+        Method::POST,
+        "/api/v1/app/introspect",
+        &other_key,
+        Some(json!({ "token": access })),
+    )
+    .await;
+    assert_eq!(cross_app.status, StatusCode::OK);
+    assert_eq!(
+        cross_app.data()["active"],
+        false,
+        "audience isolation: another app must not see this token as active"
+    );
+
     // Revocation makes the token inactive immediately.
     let revoked = post_form(
         &app,

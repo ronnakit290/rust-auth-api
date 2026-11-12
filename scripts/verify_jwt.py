@@ -16,9 +16,11 @@ from datetime import datetime, timezone
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
-BASE = "http://127.0.0.1:8099"
-ADMIN_EMAIL = "admin@example.com"
-ADMIN_PASSWORD = "AdminPass123!"
+import os
+
+BASE = os.environ.get("BASE_URL", "http://127.0.0.1:8080")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@example.com")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 
 def post_json(path, payload, token=None):
@@ -57,6 +59,9 @@ def b64url_decode(value: str) -> bytes:
 def b64url_uint(value: str) -> int:
     return int.from_bytes(b64url_decode(value), "big")
 
+
+if not ADMIN_PASSWORD:
+    raise SystemExit("set ADMIN_PASSWORD (and optionally BASE_URL / ADMIN_EMAIL)")
 
 admin = post_json("/api/v1/auth/login", {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
 admin_token = admin["data"]["tokens"]["access_token"]
@@ -100,7 +105,7 @@ public_key.verify(
 now = datetime.now(timezone.utc).timestamp()
 assert header["alg"] == "RS256", header
 assert header["typ"] == "JWT", header
-assert claims["iss"] == "http://127.0.0.1:8099", claims
+assert claims["iss"] == BASE.rstrip("/"), claims
 assert claims["aud"] == client_id, claims
 assert claims["exp"] > now, claims
 assert claims["sub"] == f"client:{client_id}", claims

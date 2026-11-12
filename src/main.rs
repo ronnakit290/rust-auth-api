@@ -93,6 +93,13 @@ fn spawn_maintenance(state: AppState) {
                 Ok(rows) => tracing::info!(rows, "session cleanup: purged expired sessions"),
                 Err(error) => tracing::warn!(%error, "session cleanup failed"),
             }
+            // SSO artefacts: expired authorization codes, dead refresh tokens and
+            // JWTs whose expiry has passed no longer need to sit in the denylist.
+            match db::oauth_flow::purge_expired(&state.pool).await {
+                Ok(0) => tracing::debug!("sso cleanup: nothing to purge"),
+                Ok(rows) => tracing::info!(rows, "sso cleanup: purged expired SSO artefacts"),
+                Err(error) => tracing::warn!(%error, "sso cleanup failed"),
+            }
         }
     });
 }
