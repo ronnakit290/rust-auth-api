@@ -78,13 +78,26 @@ fn validate_redirect_uris(uris: &[String]) -> ApiResult<Vec<String>> {
         if uri.is_empty() {
             continue;
         }
-        let absolute = (uri.starts_with("https://") || uri.starts_with("http://"))
-            && !uri.contains(' ')
-            && !uri.contains('#');
-        if !absolute {
+        // Native apps legitimately use custom schemes (`myapp://callback`), so
+        // accept any well-formed scheme except the executable ones.
+        let well_formed = uri
+            .split_once("://")
+            .map(|(scheme, rest)| {
+                !rest.is_empty()
+                    && !scheme.is_empty()
+                    && scheme
+                        .chars()
+                        .all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '-' || c == '.')
+                    && !matches!(
+                        scheme.to_ascii_lowercase().as_str(),
+                        "javascript" | "data" | "file" | "vbscript" | "about"
+                    )
+            })
+            .unwrap_or(false);
+        if !well_formed || uri.contains(' ') || uri.contains('#') {
             return Err(ApiError::field(
                 "redirect_uris",
-                format!("`{uri}` must be an absolute http(s) URI without a fragment"),
+                format!("`{uri}` must be an absolute URI (https://… or a custom app scheme) without a fragment"),
             ));
         }
         if !cleaned.iter().any(|existing| existing == uri) {
@@ -115,9 +128,7 @@ pub async fn create_client(
     payload: CreateClientRequest,
     client_info: &ClientInfo,
 ) -> ApiResult<ClientCreatedResponse> {
-    payload
-        .validate()
-        .map_err(|error| ApiError::from(error))?;
+    validator::Validate::validate(&payload)?;
 
     let client_type = payload.client_type.unwrap_or(ClientType::Confidential);
     let redirect_uris = validate_redirect_uris(payload.redirect_uris.as_deref().unwrap_or(&[]))?;
@@ -486,7 +497,7 @@ async fn issue_api_key(
     // `<prefix>_<env>_<8 hex>` is the visible part, the rest is the secret.
     let key_prefix = format!(
         "{}_{}_{}",
-        state.config.sso.app_key_prefix, environment, &random_hex(4)
+        state.config.sso.app_key_prefix, environment, random_hex(4)
     );
     let secret = format!("{key_prefix}_{}", random_token());
     let key_hash = sha256_hex(&secret);
