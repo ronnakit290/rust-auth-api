@@ -66,10 +66,7 @@ fn bearer_token(headers: &HeaderMap) -> OAuthResult<String> {
 }
 
 fn form_error(rejection: FormRejection) -> OAuthError {
-    OAuthError::invalid_request(format!(
-        "Malformed form body: {}",
-        rejection.body_text()
-    ))
+    OAuthError::invalid_request(format!("Malformed form body: {}", rejection.body_text()))
 }
 
 // ---------------------------------------------------------------------------
@@ -297,10 +294,7 @@ pub async fn userinfo(
         (status = 403, body = ErrorResponse)
     )
 )]
-pub async fn app_me(
-    State(state): State<AppState>,
-    api: ApiClient,
-) -> ApiResult<impl IntoResponse> {
+pub async fn app_me(State(state): State<AppState>, api: ApiClient) -> ApiResult<impl IntoResponse> {
     Ok(ok(sso_service::app_me(&state, &api).await?))
 }
 
@@ -322,13 +316,8 @@ pub async fn app_users(
     api: ApiClient,
     Query(pagination): Query<PaginationQuery>,
 ) -> ApiResult<impl IntoResponse> {
-    let page = sso_service::app_list_users(
-        &state,
-        &api,
-        pagination.page(),
-        pagination.per_page(),
-    )
-    .await?;
+    let page =
+        sso_service::app_list_users(&state, &api, pagination.page(), pagination.per_page()).await?;
     Ok(ok(page))
 }
 
@@ -372,7 +361,5 @@ pub async fn app_introspect(
     api: ApiClient,
     ApiJson(payload): ApiJson<AppIntrospectRequest>,
 ) -> ApiResult<impl IntoResponse> {
-    Ok(ok(
-        sso_service::app_introspect(&state, &api, payload).await?,
-    ))
+    Ok(ok(sso_service::app_introspect(&state, &api, payload).await?))
 }

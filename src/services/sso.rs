@@ -112,10 +112,7 @@ fn scope_subset(requested: &[String], allowed: &[String]) -> Vec<String> {
         .collect()
 }
 
-async fn load_active_client(
-    state: &AppState,
-    client_id: &str,
-) -> OAuthResult<ClientRow> {
+async fn load_active_client(state: &AppState, client_id: &str) -> OAuthResult<ClientRow> {
     let client = oauth_clients::find_by_client_id(&state.pool, client_id)
         .await?
         .ok_or_else(|| OAuthError::invalid_client("Unknown client_id"))?;
@@ -148,8 +145,10 @@ async fn authenticated_client(
     if client.client_type == ClientType::Confidential {
         let secret = supplied_secret
             .ok_or_else(|| OAuthError::invalid_client("client_secret is required"))?;
-        if !constant_time_eq(&crate::security::tokens::sha256_hex(&secret), &client.client_secret_hash)
-        {
+        if !constant_time_eq(
+            &crate::security::tokens::sha256_hex(&secret),
+            &client.client_secret_hash,
+        ) {
             tracing::warn!(client_id = %client.client_id, "SSO: wrong client secret");
             return Err(OAuthError::invalid_client("Invalid client secret"));
         }
@@ -168,7 +167,10 @@ struct AuthorizeContext {
     redirect_uri: String,
 }
 
-async fn prepare_authorize(state: &AppState, query: &AuthorizeQuery) -> OAuthResult<AuthorizeContext> {
+async fn prepare_authorize(
+    state: &AppState,
+    query: &AuthorizeQuery,
+) -> OAuthResult<AuthorizeContext> {
     if query.response_type.trim() != "code" {
         return Err(OAuthError::new(
             axum::http::StatusCode::BAD_REQUEST,
@@ -394,9 +396,7 @@ pub async fn token(
     match form.grant_type.trim() {
         "authorization_code" => exchange_code(state, &form, basic.as_ref(), client_info).await,
         "refresh_token" => exchange_refresh(state, &form, basic.as_ref(), client_info).await,
-        "client_credentials" => {
-            client_credentials(state, &form, basic.as_ref(), client_info).await
-        }
+        "client_credentials" => client_credentials(state, &form, basic.as_ref(), client_info).await,
         "" => Err(OAuthError::invalid_request("grant_type is required")),
         _ => Err(OAuthError::unsupported_grant_type()),
     }
@@ -532,8 +532,9 @@ async fn exchange_refresh(
 
     if row.revoked_at.is_some() {
         // Reuse of a rotated token is a strong signal of theft: burn the family.
-        let revoked = oauth_flow::revoke_refresh_for_client(&state.pool, &row.user_id, &row.client_id)
-            .await?;
+        let revoked =
+            oauth_flow::revoke_refresh_for_client(&state.pool, &row.user_id, &row.client_id)
+                .await?;
         tracing::warn!(
             user_id = %row.user_id,
             client_id = %client.client_id,

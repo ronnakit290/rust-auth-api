@@ -21,11 +21,7 @@ use crate::{
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct CreateClientRequest {
     /// Human readable application name shown in the console and audit trail.
-    #[validate(length(
-        min = 3,
-        max = 80,
-        message = "must be between 3 and 80 characters"
-    ))]
+    #[validate(length(min = 3, max = 80, message = "must be between 3 and 80 characters"))]
     pub name: String,
     #[validate(length(max = 500, message = "must be at most 500 characters"))]
     pub description: Option<String>,
@@ -126,11 +122,7 @@ impl ListClientsQuery {
 
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct CreateApiKeyRequest {
-    #[validate(length(
-        min = 3,
-        max = 80,
-        message = "must be between 3 and 80 characters"
-    ))]
+    #[validate(length(min = 3, max = 80, message = "must be between 3 and 80 characters"))]
     pub name: String,
     /// Subset of the client's allowed scopes. Defaults to all of them.
     pub scopes: Option<Vec<String>>,

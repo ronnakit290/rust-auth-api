@@ -18,8 +18,7 @@ use crate::{
     config::EmailMode,
     handlers,
     middleware::{
-        global_rate_limit, not_found, request_id, security_headers, sso_rate_limit,
-        ProductionFlag,
+        global_rate_limit, not_found, request_id, security_headers, sso_rate_limit, ProductionFlag,
     },
     openapi::ApiDoc,
     state::AppState,
@@ -109,10 +108,7 @@ pub fn build_router(state: AppState) -> Router {
             get(handlers::sso::discovery),
         )
         .route("/.well-known/jwks.json", get(handlers::sso::jwks))
-        .route(
-            "/oauth/authorize/info",
-            get(handlers::sso::authorize_info),
-        )
+        .route("/oauth/authorize/info", get(handlers::sso::authorize_info))
         .route("/oauth/authorize", post(handlers::sso::authorize))
         .route("/oauth/token", post(handlers::sso::token))
         .route("/oauth/introspect", post(handlers::sso::introspect))
@@ -149,7 +145,10 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/v1/app/me", get(handlers::sso::app_me))
         .route("/api/v1/app/users", get(handlers::sso::app_users))
         .route("/api/v1/app/users/{user_id}", get(handlers::sso::app_user))
-        .route("/api/v1/app/introspect", post(handlers::sso::app_introspect));
+        .route(
+            "/api/v1/app/introspect",
+            post(handlers::sso::app_introspect),
+        );
 
     // Development-only mailbox inspector.
     let router = if state.config.email.mode == EmailMode::Console && !production {

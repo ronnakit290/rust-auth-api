@@ -157,10 +157,7 @@ pub struct NewRefreshToken<'a> {
     pub expires_at: i64,
 }
 
-pub async fn insert_refresh(
-    db: &SqlitePool,
-    token: &NewRefreshToken<'_>,
-) -> Result<(), ApiError> {
+pub async fn insert_refresh(db: &SqlitePool, token: &NewRefreshToken<'_>) -> Result<(), ApiError> {
     sqlx::query(
         "INSERT INTO oauth_refresh_tokens (id, token_hash, client_id, user_id, scopes, expires_at, created_at) \
          VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -265,11 +262,10 @@ pub async fn revoke_jti(
 }
 
 pub async fn is_jti_revoked(db: &SqlitePool, jti: &str) -> Result<bool, ApiError> {
-    let found: Option<String> =
-        sqlx::query_scalar("SELECT jti FROM revoked_tokens WHERE jti = ?")
-            .bind(jti)
-            .fetch_optional(db)
-            .await?;
+    let found: Option<String> = sqlx::query_scalar("SELECT jti FROM revoked_tokens WHERE jti = ?")
+        .bind(jti)
+        .fetch_optional(db)
+        .await?;
     Ok(found.is_some())
 }
 

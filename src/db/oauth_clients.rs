@@ -147,7 +147,9 @@ impl ClientRow {
     }
 
     pub fn allows_redirect(&self, uri: &str) -> bool {
-        self.redirect_uris().iter().any(|registered| registered == uri)
+        self.redirect_uris()
+            .iter()
+            .any(|registered| registered == uri)
     }
 }
 
@@ -256,11 +258,7 @@ pub async fn set_status(db: &SqlitePool, id: &str, status: ClientStatus) -> Resu
     Ok(())
 }
 
-pub async fn rotate_secret(
-    db: &SqlitePool,
-    id: &str,
-    secret_hash: &str,
-) -> Result<(), ApiError> {
+pub async fn rotate_secret(db: &SqlitePool, id: &str, secret_hash: &str) -> Result<(), ApiError> {
     let now = now_ts();
     sqlx::query(
         "UPDATE oauth_clients SET client_secret_hash = ?, secret_rotated_at = ?, updated_at = ? \
@@ -440,11 +438,12 @@ pub async fn count_keys(db: &SqlitePool, client_id: &str) -> Result<i64, ApiErro
 }
 
 pub async fn revoke_key(db: &SqlitePool, id: &str) -> Result<bool, ApiError> {
-    let result = sqlx::query("UPDATE api_keys SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL")
-        .bind(now_ts())
-        .bind(id)
-        .execute(db)
-        .await?;
+    let result =
+        sqlx::query("UPDATE api_keys SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL")
+            .bind(now_ts())
+            .bind(id)
+            .execute(db)
+            .await?;
     Ok(result.rows_affected() > 0)
 }
 

@@ -112,7 +112,12 @@ fn url_encode(value: &str) -> String {
         .collect()
 }
 
-async fn post_form(app: &TestApp, path: &str, pairs: &[(&str, &str)], basic: Option<(&str, &str)>) -> Response {
+async fn post_form(
+    app: &TestApp,
+    path: &str,
+    pairs: &[(&str, &str)],
+    basic: Option<(&str, &str)>,
+) -> Response {
     let mut builder = Request::builder()
         .method(Method::POST)
         .uri(path)
@@ -176,7 +181,12 @@ async fn register_and_login(app: &TestApp, email: &str) -> (String, String) {
         Some(json!({ "email": email, "password": PASSWORD })),
     )
     .await;
-    assert_eq!(login.status, StatusCode::OK, "login failed: {:?}", login.body);
+    assert_eq!(
+        login.status,
+        StatusCode::OK,
+        "login failed: {:?}",
+        login.body
+    );
     let token = login.data()["tokens"]["access_token"]
         .as_str()
         .expect("access token")
@@ -201,7 +211,14 @@ struct Client {
 }
 
 async fn create_client(app: &TestApp, token: &str, payload: Value) -> Client {
-    let response = call(app, Method::POST, "/api/v1/admin/clients", Some(token), Some(payload)).await;
+    let response = call(
+        app,
+        Method::POST,
+        "/api/v1/admin/clients",
+        Some(token),
+        Some(payload),
+    )
+    .await;
     assert_eq!(
         response.status,
         StatusCode::CREATED,
@@ -217,7 +234,10 @@ async fn create_client(app: &TestApp, token: &str, payload: Value) -> Client {
             .as_str()
             .expect("client secret")
             .to_string(),
-        id: response.data()["client"]["id"].as_str().expect("id").to_string(),
+        id: response.data()["client"]["id"]
+            .as_str()
+            .expect("id")
+            .to_string(),
     }
 }
 
@@ -281,7 +301,14 @@ async fn admin_registers_an_application_and_issues_app_keys() {
     assert!(client.client_secret.starts_with("cs_"));
 
     // Listing + fetching by public id.
-    let list = call(&app, Method::GET, "/api/v1/admin/clients", Some(&token), None).await;
+    let list = call(
+        &app,
+        Method::GET,
+        "/api/v1/admin/clients",
+        Some(&token),
+        None,
+    )
+    .await;
     assert_eq!(list.status, StatusCode::OK);
     assert_eq!(list.data()["total"], 1);
 
@@ -360,7 +387,14 @@ async fn admin_registers_an_application_and_issues_app_keys() {
     assert_eq!(denied.error_code(), Some("INSUFFICIENT_SCOPE"));
 
     // Unknown and revoked keys are rejected.
-    let unknown = api_key_call(&app, Method::GET, "/api/v1/app/me", "ssok_live_deadbeef_unknown", None).await;
+    let unknown = api_key_call(
+        &app,
+        Method::GET,
+        "/api/v1/app/me",
+        "ssok_live_deadbeef_unknown",
+        None,
+    )
+    .await;
     assert_eq!(unknown.status, StatusCode::UNAUTHORIZED);
 
     let revoked = call(
@@ -406,7 +440,12 @@ async fn authorization_code_flow_with_pkce_issues_working_tokens() {
         url_encode(&challenge),
     );
     let info = call(&app, Method::GET, &info_path, Some(&user_token), None).await;
-    assert_eq!(info.status, StatusCode::OK, "authorize info failed: {:?}", info.body);
+    assert_eq!(
+        info.status,
+        StatusCode::OK,
+        "authorize info failed: {:?}",
+        info.body
+    );
     assert_eq!(info.body["client"]["name"], "CRM Dashboard");
     assert_eq!(info.body["already_consented"], false);
 
@@ -484,10 +523,24 @@ async fn authorization_code_flow_with_pkce_issues_working_tokens() {
         None,
     )
     .await;
-    assert_eq!(token.status, StatusCode::OK, "token exchange failed: {:?}", token.body);
-    let access = token.body["access_token"].as_str().expect("access").to_string();
-    let refresh = token.body["refresh_token"].as_str().expect("refresh").to_string();
-    assert!(token.body["id_token"].is_string(), "openid scope must yield an id_token");
+    assert_eq!(
+        token.status,
+        StatusCode::OK,
+        "token exchange failed: {:?}",
+        token.body
+    );
+    let access = token.body["access_token"]
+        .as_str()
+        .expect("access")
+        .to_string();
+    let refresh = token.body["refresh_token"]
+        .as_str()
+        .expect("refresh")
+        .to_string();
+    assert!(
+        token.body["id_token"].is_string(),
+        "openid scope must yield an id_token"
+    );
     assert_eq!(token.body["token_type"], "Bearer");
 
     // Replaying the code fails: single use.
@@ -507,7 +560,12 @@ async fn authorization_code_flow_with_pkce_issues_working_tokens() {
     assert_eq!(replay.status, StatusCode::BAD_REQUEST);
 
     let userinfo = call(&app, Method::GET, "/oauth/userinfo", Some(&access), None).await;
-    assert_eq!(userinfo.status, StatusCode::OK, "userinfo failed: {:?}", userinfo.body);
+    assert_eq!(
+        userinfo.status,
+        StatusCode::OK,
+        "userinfo failed: {:?}",
+        userinfo.body
+    );
     assert_eq!(userinfo.body["sub"], user_id);
     assert_eq!(userinfo.body["email"], "flow-user@example.com");
 
@@ -535,7 +593,12 @@ async fn authorization_code_flow_with_pkce_issues_working_tokens() {
         None,
     )
     .await;
-    assert_eq!(refreshed.status, StatusCode::OK, "refresh failed: {:?}", refreshed.body);
+    assert_eq!(
+        refreshed.status,
+        StatusCode::OK,
+        "refresh failed: {:?}",
+        refreshed.body
+    );
     let new_refresh = refreshed.body["refresh_token"]
         .as_str()
         .expect("rotated refresh")
@@ -643,8 +706,16 @@ async fn client_credentials_issues_machine_tokens() {
         Some((&client.client_id, &client.client_secret)),
     )
     .await;
-    assert_eq!(token.status, StatusCode::OK, "grant failed: {:?}", token.body);
-    let access = token.body["access_token"].as_str().expect("access").to_string();
+    assert_eq!(
+        token.status,
+        StatusCode::OK,
+        "grant failed: {:?}",
+        token.body
+    );
+    let access = token.body["access_token"]
+        .as_str()
+        .expect("access")
+        .to_string();
     assert_eq!(token.body["scope"], "users:read tokens:verify");
     assert!(token.body.get("refresh_token").is_none());
 
@@ -662,7 +733,10 @@ async fn client_credentials_issues_machine_tokens() {
         Some(json!({ "name": "verifier", "scopes": ["tokens:verify"] })),
     )
     .await;
-    let key = key_response.data()["secret"].as_str().expect("key").to_string();
+    let key = key_response.data()["secret"]
+        .as_str()
+        .expect("key")
+        .to_string();
 
     let introspected = api_key_call(
         &app,
@@ -674,7 +748,10 @@ async fn client_credentials_issues_machine_tokens() {
     .await;
     assert_eq!(introspected.status, StatusCode::OK);
     assert_eq!(introspected.data()["active"], true);
-    assert_eq!(introspected.data()["sub"], format!("client:{}", client.client_id));
+    assert_eq!(
+        introspected.data()["sub"],
+        format!("client:{}", client.client_id)
+    );
 
     // Revocation makes the token inactive immediately.
     let revoked = post_form(
@@ -719,7 +796,10 @@ async fn disabled_applications_lose_all_access() {
         Some(json!({ "name": "portal-key", "scopes": ["users:read"] })),
     )
     .await;
-    let key = key_response.data()["secret"].as_str().expect("key").to_string();
+    let key = key_response.data()["secret"]
+        .as_str()
+        .expect("key")
+        .to_string();
 
     let working = api_key_call(&app, Method::GET, "/api/v1/app/me", &key, None).await;
     assert_eq!(working.status, StatusCode::OK);
@@ -796,7 +876,14 @@ async fn application_management_requires_an_admin() {
     let app = spawn_app().await;
     let (user_token, _) = register_and_login(&app, "plain-user@example.com").await;
 
-    let denied = call(&app, Method::GET, "/api/v1/admin/clients", Some(&user_token), None).await;
+    let denied = call(
+        &app,
+        Method::GET,
+        "/api/v1/admin/clients",
+        Some(&user_token),
+        None,
+    )
+    .await;
     assert_eq!(denied.status, StatusCode::FORBIDDEN);
 
     let anonymous = call(&app, Method::GET, "/api/v1/admin/clients", None, None).await;

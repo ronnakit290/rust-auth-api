@@ -67,7 +67,7 @@ impl Modify for SecurityAddon {
     info(
         title = "Rust Auth API",
         version = "0.1.0",
-        description = "A complete authentication and user-management API: JWT access tokens, rotating refresh tokens with reuse detection, e-mail verification, password reset, TOTP two-factor with recovery codes, session management, RBAC and an audit trail.\n\nAll responses are wrapped in `{ \"success\": true, \"data\": ... }`; errors use `{ \"success\": false, \"error\": { \"code\", \"message\", \"details\" } }`.",
+        description = "A complete authentication and user-management API **and** a central SSO server.\n\n* Users: register, login, rotating refresh tokens with reuse detection, e-mail verification, password reset, TOTP two-factor with recovery codes, sessions, RBAC, audit trail.\n* Other systems connect through OAuth2 (`authorization_code` + PKCE, `client_credentials`) or an **App Key** (`X-API-Key`). Tokens are RS256 JWTs verifiable offline with `/.well-known/jwks.json`.\n\n`/api/*` responses are wrapped in `{ \"success\": true, \"data\": ... }`; errors use `{ \"success\": false, \"error\": { \"code\", \"message\", \"details\" } }`. The standards endpoints under `/oauth/*` and `/.well-known/*` answer with the RFC 6749 / 7662 bodies (`{ \"error\": \"invalid_grant\" }`, flat token payloads).",
         contact(name = "Nisia Studio")
     ),
     servers(

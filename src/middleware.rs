@@ -115,19 +115,17 @@ pub async fn sso_rate_limit(
     next: Next,
 ) -> Response {
     let path = request.uri().path();
-    let guarded = matches!(
-        path,
-        "/oauth/token" | "/oauth/introspect" | "/oauth/revoke"
-    );
+    let guarded = matches!(path, "/oauth/token" | "/oauth/introspect" | "/oauth/revoke");
     if !guarded {
         return next.run(request).await;
     }
 
     let identity =
         client_ip(&request, state.config.trust_proxy).unwrap_or_else(|| "unknown".into());
-    if let Err(retry_after) = state
-        .limiter
-        .check("sso", &identity, 60, std::time::Duration::from_secs(60))
+    if let Err(retry_after) =
+        state
+            .limiter
+            .check("sso", &identity, 60, std::time::Duration::from_secs(60))
     {
         tracing::warn!(ip = %identity, path, "SSO rate limit hit");
         return ApiError::rate_limited(retry_after).into_response();

@@ -84,8 +84,8 @@ impl SsoKeys {
                 (pem, public, false)
             }
             None => {
-                let key = RsaPrivateKey::new(&mut OsRng, 2048)
-                    .context("RSA key generation failed")?;
+                let key =
+                    RsaPrivateKey::new(&mut OsRng, 2048).context("RSA key generation failed")?;
                 let private = key
                     .to_pkcs8_pem(LineEnding::LF)
                     .context("cannot encode the generated SSO key")?

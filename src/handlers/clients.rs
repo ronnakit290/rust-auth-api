@@ -71,8 +71,7 @@ pub async fn create_client(
     ApiJson(payload): ApiJson<CreateClientRequest>,
 ) -> ApiResult<impl IntoResponse> {
     payload.validate()?;
-    let response =
-        clients_service::create_client(&state, &admin.0, payload, &client_info).await?;
+    let response = clients_service::create_client(&state, &admin.0, payload, &client_info).await?;
     Ok(created(response))
 }
 
@@ -162,9 +161,13 @@ pub async fn rotate_client_secret(
     client_info: ClientInfo,
     Path(client_ref): Path<String>,
 ) -> ApiResult<impl IntoResponse> {
-    Ok(ok(
-        clients_service::rotate_client_secret(&state, &admin.0, &client_ref, &client_info).await?,
-    ))
+    Ok(ok(clients_service::rotate_client_secret(
+        &state,
+        &admin.0,
+        &client_ref,
+        &client_info,
+    )
+    .await?))
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +189,9 @@ pub async fn list_keys(
     _admin: AdminUser,
     Path(client_ref): Path<String>,
 ) -> ApiResult<impl IntoResponse> {
-    Ok(ok(clients_service::list_api_keys(&state, &client_ref).await?))
+    Ok(ok(
+        clients_service::list_api_keys(&state, &client_ref).await?
+    ))
 }
 
 #[utoipa::path(

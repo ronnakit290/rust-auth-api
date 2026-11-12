@@ -215,10 +215,7 @@ pub async fn create_client(
     })
 }
 
-pub async fn list_clients(
-    state: &AppState,
-    query: ListClientsQuery,
-) -> ApiResult<Page<ClientDto>> {
+pub async fn list_clients(state: &AppState, query: ListClientsQuery) -> ApiResult<Page<ClientDto>> {
     let pagination = query.pagination();
     let filter = ClientFilter {
         search: query.search.clone(),
@@ -259,7 +256,12 @@ pub async fn update_client(
     payload.validate()?;
 
     let client = client_or_404(state, reference).await?;
-    let name = payload.name.as_deref().unwrap_or(&client.name).trim().to_string();
+    let name = payload
+        .name
+        .as_deref()
+        .unwrap_or(&client.name)
+        .trim()
+        .to_string();
     if name.len() < 3 {
         return Err(ApiError::field("name", "must be at least 3 characters"));
     }
@@ -346,7 +348,9 @@ pub async fn delete_client(
             target_id: Some(&client.id),
             ip_address: client_info.ip.as_deref(),
             user_agent: client_info.user_agent.as_deref(),
-            metadata: Some(serde_json::json!({ "name": client.name, "client_id": client.client_id })),
+            metadata: Some(
+                serde_json::json!({ "name": client.name, "client_id": client.client_id }),
+            ),
         },
     )
     .await;
@@ -460,7 +464,15 @@ pub async fn create_api_key(
         ));
     }
 
-    let issued = issue_api_key(state, &client, &payload.name, &scopes, &environment, expires_at).await?;
+    let issued = issue_api_key(
+        state,
+        &client,
+        &payload.name,
+        &scopes,
+        &environment,
+        expires_at,
+    )
+    .await?;
 
     audit::record(
         state,
@@ -497,7 +509,9 @@ async fn issue_api_key(
     // `<prefix>_<env>_<8 hex>` is the visible part, the rest is the secret.
     let key_prefix = format!(
         "{}_{}_{}",
-        state.config.sso.app_key_prefix, environment, random_hex(4)
+        state.config.sso.app_key_prefix,
+        environment,
+        random_hex(4)
     );
     let secret = format!("{key_prefix}_{}", random_token());
     let key_hash = sha256_hex(&secret);
