@@ -1,0 +1,18 @@
+# Build artifacts
+/target
+**/*.rs.bk
+
+# Runtime data (SQLite database + WAL)
+/data
+*.db
+*.db-shm
+*.db-wal
+
+# Local environment
+.env
+.env.local
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/

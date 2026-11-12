@@ -1,0 +1,49 @@
+services:
+  auth-api:
+    build: .
+    image: rust-auth-api:local
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      APP_ENV: production
+      APP_NAME: rust-auth-api
+      HOST: 0.0.0.0
+      PORT: 8080
+      DATABASE_URL: sqlite:///data/auth.db?mode=rwc
+      DB_MAX_CONNECTIONS: "10"
+      # Never ship this default: `openssl rand -hex 32`
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_ISSUER: rust-auth-api
+      JWT_AUDIENCE: rust-auth-api-clients
+      ACCESS_TOKEN_TTL_SECONDS: "900"
+      REFRESH_TOKEN_TTL_SECONDS: "2592000"
+      REQUIRE_EMAIL_VERIFICATION: "true"
+      VERIFY_SESSION_ON_REQUEST: "true"
+      MAX_LOGIN_ATTEMPTS: "5"
+      LOCKOUT_SECONDS: "900"
+      EMAIL_MODE: ${EMAIL_MODE:-console}
+      EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.com}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      TRUST_PROXY: "true"
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      RUST_LOG: info,tower_http=info,sqlx=warn
+    volumes:
+      - auth-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+
+volumes:
+  auth-data:
